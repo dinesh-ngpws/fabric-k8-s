@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ord-ca
+  labels:
+    app: ord-ca
+spec:
+  ports:
+  - port: 7054
+    targetPort: 7054
+    name: caport
+  type: LoadBalancer
+  selector:
+    app: ord-ca

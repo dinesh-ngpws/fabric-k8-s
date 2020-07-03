@@ -1,0 +1,4 @@
+deploy-*/rootca/
+docker/
+certs/
+channel-artifacts/

@@ -1,0 +1,106 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: orderer-slow
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+  fstype: ext4
+  replication-type: none
+---
+  apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: orderer-claim
+  spec:
+    storageClassName: orderer-slow
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: orderer
+spec:
+  serviceName: "orderer"
+  selector:
+    matchLabels:
+      app: orderer
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: orderer
+    spec:
+      containers:
+        - name: orderer
+          image: hyperledger/fabric-orderer:2.1.1
+          command: ["sh","-c","orderer"]
+          ports:
+            - containerPort: 7054
+          workingDir: /opt/gopath/src/github.com/hyperledger/fabric
+          env:
+            - name: FABRIC_LOGGING_SPEC
+              value: "DEBUG"
+            - name: ORDERER_GENERAL_LISTENADDRESS
+              value: "0.0.0.0"
+            - name: ORDERER_GENERAL_GENESISFILE
+              value: "/var/hyperledger/orderer/orderer.genesis.block"
+            - name: ORDERER_GENERAL_GENESISMETHOD
+              value: "file"
+            - name: ORDERER_GENERAL_LOCALMSPID
+              value: "ordererMSP"
+            - name: ORDERER_GENERAL_LOCALMSPDIR
+              value: "/var/hyperledger/orderer/msp"
+            - name: ORDERER_GENERAL_TLS_ENABLED
+              value: "true"
+            - name: ORDERER_GENERAL_TLS_PRIVATEKEY
+              value: "/var/hyperledger/orderer/tls/server.key"
+            - name: ORDERER_GENERAL_TLS_CERTIFICATE
+              value: "/var/hyperledger/orderer/tls/server.crt"
+            - name: ORDERER_GENERAL_TLS_ROOTCAS
+              value: "[/var/hyperledger/orderer/tls/ca.crt]"
+          volumeMounts:
+            - name: genesis-block
+              mountPath: /var/hyperledger/orderer/
+            - name: msp
+              mountPath: /var/hyperledger/orderer/msp/
+            - name: tls
+              mountPath: /var/hyperledger/orderer/tls/
+            - name: storage
+              mountPath: /var/hyperledger/production/orderer
+      volumes:
+        - name: genesis-block
+          secret:
+            secretName: genesis-block
+            items:
+              - key: genesis
+                path: orderer.genesis.block
+        - name: msp
+          secret:
+            secretName: orderer-msp
+            items:
+              - key: config
+                path: config.yaml
+              - key: keystore
+                path: keystore/sign.key
+              - key: signcerts
+                path: signcerts/cert.pem
+              - key: cacerts
+                path: cacerts/orderer-ca.pem
+        - name: tls
+          secret:
+            secretName: orderer-tls
+            items:
+              - key: ca
+                path: ca.crt
+              - key: server-cert
+                path: server.crt
+              - key: server-key
+                path: server.key
+        - name: storage
+          persistentVolumeClaim:
+            claimName: orderer-claim

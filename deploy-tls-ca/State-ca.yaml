@@ -1,0 +1,71 @@
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: ca-slow
+    provisioner: kubernetes.io/gce-pd
+    parameters:
+      type: pd-standard
+      fstype: ext4
+      replication-type: none
+---
+  apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: tls-ca-claim
+  spec:
+    storageClassName: ca-slow
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tls-ca
+spec:
+  serviceName: "ca"
+  selector:
+    matchLabels:
+      app: tls-ca # has to match .spec.template.metadata.labels
+  replicas: 1 # by default is 1
+  template:
+    metadata:
+      labels:
+        app: tls-ca # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: tls-ca
+        image: hyperledger/fabric-ca:1.4.6
+        command: ["sh","-c","cp /etc/hyperledger/fabric-ca-server-config.yaml /etc/hyperledger/fabric-ca-server/;fabric-ca-server start"]
+        ports:
+        - containerPort: 7054
+        volumeMounts:
+        - name: castate
+          mountPath: /etc/hyperledger/fabric-ca-server
+        - name: ca-config
+          mountPath: /etc/hyperledger/
+        env:
+          - name: FABRIC_CA_SERVER_HOME
+            value: /etc/hyperledger/fabric-ca-server
+      volumes:
+        - name: ca-config
+          configMap:
+            name: tls-ca
+            items:
+              - key: fabric-ca-server-config.yaml
+                path: fabric-ca-server-config.yaml
+        - name: castate
+          persistentVolumeClaim:
+              claimName: tls-ca-claim
+  # volumeClaimTemplates:
+  #       - metadata:
+  #           name: castate
+  #         spec:
+  #           accessModes: [ "ReadWriteOnce" ]
+  #           storageClassName: ca-slow
+  #           resources:
+  #             requests:
+  #               storage: 1Gi

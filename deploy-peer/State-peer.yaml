@@ -1,0 +1,116 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: peer-slow
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+  fstype: ext4
+  replication-type: none
+---
+  apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: peer-claim
+  spec:
+    storageClassName: peer-slow
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: peer
+spec:
+  serviceName: "peer"
+  selector:
+    matchLabels:
+      app: peer
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: peer
+    spec:
+      containers:
+        - name: peer
+          image: hyperledger/fabric-peer:2.1.1
+          command: ["sh","-c","peer node start"]
+          ports:
+            - name: peer
+              containerPort: 7051
+            - name: chaincode
+              containerPort: 7053
+          workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+          env:
+            - name: FABRIC_LOGGING_SPEC
+              value: "DEBUG"
+            - name: CORE_VM_ENDPOINT
+              value: "unix:///host/var/run/docker.sock"
+            - name: CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE
+              value: "bridge"
+            - name: CORE_PEER_ID
+              value: "peer-org"
+            - name: CORE_PEER_ADDRESS
+              value: "35.240.86.126:7051"
+            - name: CORE_PEER_LISTENADDRESS
+              value: "0.0.0.0:7051"
+            - name: CORE_PEER_CHAINCODEADDRESS
+              value: "35.240.86.126:7053"
+            - name: CORE_PEER_CHAINCODELISTENADDRESS
+              value: "0.0.0.0:7053"
+            - name: CORE_PEER_LOCALMSPID
+              value: "orgMSP"
+            - name: CORE_PEER_TLS_ENABLED
+              value: "true"
+            - name: CORE_PEER_GOSSIP_USELEADERELECTION
+              value: "false"
+            - name: CORE_PEER_GOSSIP_ORGLEADER
+              value: "true"
+            - name: CORE_PEER_TLS_CERT_FILE
+              value: "/etc/hyperledger/fabric/tls/server.crt"
+            - name: CORE_PEER_TLS_KEY_FILE
+              value: "/etc/hyperledger/fabric/tls/server.key"
+            - name: CORE_PEER_TLS_ROOTCERT_FILE
+              value: /etc/hyperledger/fabric/tls/ca.crt
+          volumeMounts:
+            - name: host
+              mountPath: /host/var/run/
+            - name: msp
+              mountPath: /etc/hyperledger/fabric/msp/
+            - name: tls
+              mountPath: /etc/hyperledger/fabric/tls/
+            - name: storage
+              mountPath: /var/hyperledger/production/
+      volumes:
+        - name: host
+          hostPath:
+            path: /var/run/
+        - name: msp
+          secret:
+            secretName: peer-msp
+            items:
+              - key: config
+                path: config.yaml
+              - key: keystore
+                path: keystore/sign.key
+              - key: signcerts
+                path: signcerts/cert.pem
+              - key: cacerts
+                path: cacerts/peer-ca.pem
+        - name: tls
+          secret:
+            secretName: peer-tls
+            items:
+              - key: ca
+                path: ca.crt
+              - key: server-cert
+                path: server.crt
+              - key: server-key
+                path: server.key
+        - name: storage
+          persistentVolumeClaim:
+            claimName: peer-claim
