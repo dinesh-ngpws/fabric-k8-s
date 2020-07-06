@@ -13,8 +13,8 @@ services:
                     - GOPATH=/opt/gopath
                     - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
                     - FABRIC_LOGGING_SPEC=INFO
-                    - CORE_PEER_ID=cli
-                    - CORE_PEER_ADDRESS=35.240.86.126:7051
+                    - CORE_PEER_ID="admin-org"
+                    - CORE_PEER_ADDRESS=34.78.255.211:7051
                     - CORE_PEER_LOCALMSPID=orgMSP
                     - CORE_PEER_TLS_ENABLED=true
                     - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp

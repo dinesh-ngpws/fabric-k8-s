@@ -61,7 +61,7 @@ export FABRIC_CA_CLIENT_TLS_CERTFILES=$PWD/deploy-tls-ca/rootca/tls-ca-cert.pem
 
 export FABRIC_CA_CLIENT_MSPDIR=tls
 set -x
-fabric-ca-client enroll -d -u https://peer-org:peerpw@34.78.133.32:7054 --enrollment.profile tls --csr.hosts peer-org --csr.hosts localhost
+fabric-ca-client enroll -d -u https://peer-org:peerpw@34.78.133.32:7054 --enrollment.profile tls --csr.hosts 34.78.255.211 --csr.hosts peer
 set +x
 
 cp  $FABRIC_CA_CLIENT_HOME/tls/tlscacerts/* $FABRIC_CA_CLIENT_HOME/tls/ca.crt
@@ -102,7 +102,7 @@ export FABRIC_CA_CLIENT_TLS_CERTFILES=$PWD/deploy-tls-ca/rootca/tls-ca-cert.pem
 
 export FABRIC_CA_CLIENT_MSPDIR=tls
 set -x
-fabric-ca-client enroll -d -u https://admin-org:adminpw@34.78.133.32:7054 --enrollment.profile tls --csr.hosts admin-org --csr.hosts localhost
+fabric-ca-client enroll -d -u https://admin-org:adminpw@34.78.133.32:7054 --enrollment.profile tls --csr.hosts cli --csr.hosts 34.105.243.87
 set +x
 
 cp  $FABRIC_CA_CLIENT_HOME/tls/tlscacerts/* $FABRIC_CA_CLIENT_HOME/tls/ca.crt

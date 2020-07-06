@@ -55,11 +55,11 @@ spec:
             - name: CORE_PEER_ID
               value: "peer-org"
             - name: CORE_PEER_ADDRESS
-              value: "35.240.86.126:7051"
+              value: "34.78.255.211:7051"
             - name: CORE_PEER_LISTENADDRESS
               value: "0.0.0.0:7051"
             - name: CORE_PEER_CHAINCODEADDRESS
-              value: "35.240.86.126:7053"
+              value: "34.78.255.211:7053"
             - name: CORE_PEER_CHAINCODELISTENADDRESS
               value: "0.0.0.0:7053"
             - name: CORE_PEER_LOCALMSPID
